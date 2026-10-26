@@ -119,6 +119,27 @@
       border-radius: 13px; font-weight: 700; cursor: pointer;
     }
     .again.show { display: block; }
+    .completion-banner {
+      display: none; margin-top: 18px; padding: 26px 18px 24px;
+      border-radius: 22px; background: linear-gradient(135deg, #e5f8ee, #f4fff8);
+      border: 2px solid #a8e5c4; text-align: center; color: #126b48;
+      box-shadow: 0 8px 24px rgba(22, 132, 91, .10);
+    }
+    .completion-banner.show { display: block; animation: pop-in .28s ease-out; }
+    .completion-check {
+      display: grid; place-items: center; width: 66px; height: 66px;
+      margin: 0 auto 12px; border-radius: 50%; background: #16845b; color: white;
+      font-size: 39px; font-weight: 800; box-shadow: 0 5px 14px rgba(22, 132, 91, .22);
+    }
+    .completion-title {
+      margin: 0; font-size: clamp(30px, 8vw, 38px);
+      line-height: 1.25; font-weight: 900; letter-spacing: -.04em;
+    }
+    .completion-subtitle { margin: 9px 0 0; font-size: 14px; font-weight: 650; }
+    @keyframes pop-in {
+      from { opacity: 0; transform: translateY(8px) scale(.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
     .footer { text-align: center; color: #8a93a2; font-size: 10px; line-height: 1.7; margin-top: 22px; }
     .overlay {
       position: fixed; inset: 0; z-index: 10; display: none; align-items: center;
@@ -195,6 +216,12 @@
       </p>
     </section>
 
+    <section class="completion-banner" id="completionBanner" aria-live="assertive" role="status">
+      <div class="completion-check" aria-hidden="true">✓</div>
+      <h2 class="completion-title">完了しました！</h2>
+      <p class="completion-subtitle">デモ通信が正常に終了しました</p>
+    </section>
+
     <section class="notice">
       <strong>通信品質テストについて</strong><br>
       ボタンを押すと外部のHTTPSサーバーへテスト通信を行います。待ち時間は通信の応答・ダウンロード完了に応じて変わります。実際のお金、決済アカウント、個人情報は使用しません。
@@ -229,6 +256,7 @@
       const resultTitle = document.getElementById('resultTitle');
       const resultDetail = document.getElementById('resultDetail');
       const againButton = document.getElementById('againButton');
+      const completionBanner = document.getElementById('completionBanner');
 
       // これらは公開テスト用エンドポイントです。決済情報は送信しません。
       const API_URL = 'https://httpbin.org/post';
@@ -237,6 +265,7 @@
       function showResult({ ok, title, detail }) {
         result.classList.add('show');
         result.classList.toggle('error', !ok);
+        completionBanner.classList.toggle('show', ok);
         resultIcon.textContent = ok ? '✓' : '!';
         resultTitle.textContent = title;
         resultDetail.textContent = detail;
@@ -247,6 +276,7 @@
         payButton.disabled = true;
         againButton.classList.remove('show');
         result.classList.remove('show', 'error');
+        completionBanner.classList.remove('show');
         overlay.classList.add('show');
         loadingText.innerHTML = '通信状況を確認しています。<br>そのままお待ちください。';
 
@@ -297,6 +327,7 @@
       payButton.addEventListener('click', runDemo);
       againButton.addEventListener('click', () => {
         result.classList.remove('show', 'error');
+        completionBanner.classList.remove('show');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     })();
