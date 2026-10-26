@@ -157,6 +157,22 @@
       animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .modal-success-icon {
+      display: none; place-items: center; width: 76px; height: 76px;
+      margin: 0 auto 17px; border-radius: 50%; background: #16845b; color: #fff;
+      font-size: 48px; font-weight: 800; box-shadow: 0 7px 20px rgba(22, 132, 91, .22);
+    }
+    .loading-card.success .spinner { display: none; }
+    .loading-card.success .modal-success-icon { display: grid; }
+    .loading-card.success .loading-title { color: #126b48; font-size: 25px; }
+    .loading-card.error .spinner { display: none; }
+    .loading-card.error .modal-success-icon { display: grid; background: #bd5a20; box-shadow: none; }
+    .modal-close {
+      display: none; width: 100%; min-height: 50px; margin-top: 22px;
+      border: 0; border-radius: 14px; background: #3157d5; color: white;
+      font-size: 16px; font-weight: 750; cursor: pointer;
+    }
+    .loading-card.finished .modal-close { display: block; }
     .loading-title { font-size: 19px; font-weight: 800; margin: 0 0 8px; }
     .loading-text { color: var(--muted); font-size: 13px; line-height: 1.7; margin: 0; }
     .loading-amount { margin-top: 18px; font-weight: 800; font-size: 22px; }
@@ -238,11 +254,13 @@
 
   <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="loadingTitle">
     <div class="loading-card">
-      <div class="spinner" aria-hidden="true"></div>
+      <div class="spinner" id="modalSpinner" aria-hidden="true"></div>
+      <div class="modal-success-icon" id="modalSuccessIcon" aria-hidden="true">✓</div>
       <h2 class="loading-title" id="loadingTitle">決済処理中</h2>
       <p class="loading-text" id="loadingText">通信状況を確認しています。<br>そのままお待ちください。</p>
-      <div class="loading-amount">￥500</div>
-      <p class="loading-hint">デモ通信中です。画面を閉じずにお待ちください。</p>
+      <div class="loading-amount" id="loadingAmount">￥500</div>
+      <p class="loading-hint" id="loadingHint">デモ通信中です。画面を閉じずにお待ちください。</p>
+      <button class="modal-close" id="modalCloseButton" type="button">閉じる</button>
     </div>
   </div>
 
@@ -251,6 +269,12 @@
       const payButton = document.getElementById('payButton');
       const overlay = document.getElementById('overlay');
       const loadingText = document.getElementById('loadingText');
+      const loadingCard = document.querySelector('.loading-card');
+      const loadingTitle = document.getElementById('loadingTitle');
+      const modalSuccessIcon = document.getElementById('modalSuccessIcon');
+      const loadingAmount = document.getElementById('loadingAmount');
+      const loadingHint = document.getElementById('loadingHint');
+      const modalCloseButton = document.getElementById('modalCloseButton');
       const result = document.getElementById('result');
       const resultIcon = document.getElementById('resultIcon');
       const resultTitle = document.getElementById('resultTitle');
@@ -263,13 +287,33 @@
       const DOWNLOAD_URL = 'https://speed.cloudflare.com/__down?bytes=262144';
 
       function showResult({ ok, title, detail }) {
+        // Keep the centered modal visible until the user taps 「閉じる」.
+        loadingCard.classList.remove('success', 'error', 'finished');
+        loadingCard.classList.add(ok ? 'success' : 'error', 'finished');
+        loadingTitle.textContent = ok ? '決済完了しました！' : '通信エラー';
+        loadingText.textContent = ok
+          ? 'デモ通信が正常に完了しました。'
+          : '通信を完了できませんでした。';
+        loadingAmount.style.display = 'none';
+        loadingHint.textContent = ok
+          ? 'これはデモです。実際の決済は行われていません。'
+          : detail;
+        modalSuccessIcon.textContent = ok ? '✓' : '!';
         result.classList.add('show');
         result.classList.toggle('error', !ok);
-        completionBanner.classList.toggle('show', ok);
+        completionBanner.classList.remove('show');
         resultIcon.textContent = ok ? '✓' : '!';
         resultTitle.textContent = title;
         resultDetail.textContent = detail;
         againButton.classList.add('show');
+      }
+
+      function closeModal() {
+        overlay.classList.remove('show');
+        loadingCard.classList.remove('success', 'error', 'finished');
+        loadingTitle.textContent = '決済処理中';
+        loadingAmount.style.display = '';
+        modalCloseButton.blur();
       }
 
       async function runDemo() {
@@ -277,6 +321,10 @@
         againButton.classList.remove('show');
         result.classList.remove('show', 'error');
         completionBanner.classList.remove('show');
+        loadingCard.classList.remove('success', 'error', 'finished');
+        loadingTitle.textContent = '決済処理中';
+        loadingAmount.style.display = '';
+        loadingHint.textContent = 'デモ通信中です。画面を閉じずにお待ちください。';
         overlay.classList.add('show');
         loadingText.innerHTML = '通信状況を確認しています。<br>そのままお待ちください。';
 
@@ -319,12 +367,13 @@
             detail: '約' + elapsed + '秒経過しました。ネットワーク接続、コンテンツブロッカー、またはテスト用サーバーの状態を確認してください。詳細：' + (error && error.message ? error.message : '通信エラー') + '。実際の決済は行われていません。'
           });
         } finally {
-          overlay.classList.remove('show');
+          // Keep the modal open after success or failure until 「閉じる」 is tapped.
           payButton.disabled = false;
         }
       }
 
       payButton.addEventListener('click', runDemo);
+      modalCloseButton.addEventListener('click', closeModal);
       againButton.addEventListener('click', () => {
         result.classList.remove('show', 'error');
         completionBanner.classList.remove('show');
